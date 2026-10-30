@@ -1,0 +1,49 @@
+name: ci-cd
+on:
+  push: { branches: [main] }
+  pull_request:
+env:
+  IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/imposter
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      - uses: docker/login-action@v3
+        if: github.ref == 'refs/heads/main'
+        with: { username: "${{ secrets.DOCKERHUB_USERNAME }}", password: "${{ secrets.DOCKERHUB_TOKEN }}" }
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ env.IMAGE }}:${{ github.sha }},${{ env.IMAGE }}:latest
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-kubectl@v4
+      - name: Configure kubeconfig
+        run: mkdir -p ~/.kube && echo "${{ secrets.KUBE_CONFIG_B64 }}" | base64 -d > ~/.kube/config
+      - name: Deploy
+        run: |
+          kubectl create secret generic imposter-secret \
+            --from-literal=NEXT_PUBLIC_SUPABASE_ANON_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
+            --from-literal=SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f k8s/configmap.yaml -f k8s/service.yaml
+          sed "s|DOCKERHUB_USER/imposter:latest|${{ secrets.DOCKERHUB_USERNAME }}/imposter:${{ github.sha }}|" k8s/deployment.yaml | kubectl apply -f -
+          kubectl rollout status deployment/imposter --timeout=120s

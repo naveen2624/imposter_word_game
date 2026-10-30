@@ -1,0 +1,8 @@
+@tailwind base; @tailwind components; @tailwind utilities;
+body { @apply bg-slate-950 text-slate-100 min-h-screen; background-image: radial-gradient(circle at 20% 0%, #4c1d95 0%, transparent 40%); }
+.card { @apply rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur; }
+.btn { @apply rounded-xl bg-gradient-to-r from-violet-600 to-purple-500 px-5 py-2.5 font-semibold transition hover:scale-[1.02] disabled:opacity-40; }
+.btn-ghost { @apply rounded-xl border border-white/15 px-4 py-2 transition hover:bg-white/10; }
+.input { @apply w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 outline-none focus:border-violet-500; }
+@keyframes pop { from { opacity: 0; transform: scale(.8) } to { opacity: 1; transform: scale(1) } }
+.pop { animation: pop .5s ease-out; }
