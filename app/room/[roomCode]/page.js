@@ -230,7 +230,7 @@ export default function Room({ params }) {
               <Skull className="mx-auto text-red-400" />
               <b className="text-red-400">You are the IMPOSTER</b>
               <p className="text-sm">
-                You don't know the word.
+                You don&apos;t know the word.
                 {role.hint && (
                   <>
                     {" "}

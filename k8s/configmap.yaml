@@ -2,4 +2,4 @@ apiVersion: v1
 kind: ConfigMap
 metadata: { name: imposter-config }
 data:
-  NEXT_PUBLIC_SUPABASE_URL: "https://YOUR-PROJECT.supabase.co"
+  NEXT_PUBLIC_SUPABASE_URL: "https://ssjlrsaeqsmagtotizrm.supabase.co"
